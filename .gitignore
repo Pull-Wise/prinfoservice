@@ -19,6 +19,7 @@ bin/
 
 #private key
 src/main/resources/demohook555.2025-03-07.private-key.pem
+src/main/resources/pullwise.2025-03-14.private-key.pem
 
 ### IntelliJ IDEA ###
 .idea

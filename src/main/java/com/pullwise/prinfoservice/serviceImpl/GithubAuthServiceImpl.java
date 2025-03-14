@@ -45,7 +45,7 @@ public class GithubAuthServiceImpl {
     @Autowired
     PRInfoServiceResolver prInfoServiceResolver;
 
-    private static final String PRIVATE_KEY_PATH = "src/main/resources/demohook555.2025-03-07.private-key.pem";
+    private static final String PRIVATE_KEY_PATH = "src/main/resources/pullwise.2025-03-14.private-key.pem";
     private static final long EXPIRATION_TIME_MS = 10 * 60 * 1000;  // 10 minutes
 
     public static String generateGitHubJWT(String appId) throws Exception {
