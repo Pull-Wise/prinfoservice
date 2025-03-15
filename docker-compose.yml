@@ -37,7 +37,7 @@ services:
     image: certbot/certbot
     container_name: certbot
     depends_on:
-      nginx:
+      app:
         condition: service_healthy
     volumes:
       - letsencrypt:/etc/letsencrypt
