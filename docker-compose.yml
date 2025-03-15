@@ -5,31 +5,34 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    healthcheck:   # ✅ Health check ensures app is ready before Certbot starts
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+
   nginx:
     image: nginx:latest
-    container_name: nginx-proxy
+    container_name: nginx
+    restart: always
     depends_on:
-      - app
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certbot:/var/www/certbot
-      - /etc/letsencrypt:/etc/letsencrypt
+      app:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+
   certbot:
     image: certbot/certbot
     container_name: certbot
     depends_on:
-      app:
-        condition: service_started
-      nginx:
-        condition: service_started
+      - nginx   # ✅ Ensures Nginx is running before Certbot starts
     volumes:
-      - ./nginx/certbot/www:/var/www/certbot
-      - ./nginx/certbot/conf:/etc/letsencrypt
-    entrypoint: >
-      sh -c "certbot certonly --webroot --webroot-path=/var/www/certbot
-      --email pullwise@outlook.com --agree-tos --no-eff-email --force-renewal
-      -d posttopurchase.store -d www.posttopurchase.store &&
-      cp /etc/letsencrypt/live/posttopurchase.store/fullchain.pem /etc/letsencrypt/live/posttopurchase.store/privkey.pem /var/www/certbot/"
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    entrypoint: ["/bin/sh", "-c", "sleep 20 && certbot certonly --webroot -w /var/www/certbot -d posttopurchase.store -d www.posttopurchase.store --email you@example.com --agree-tos --non-interactive"]
