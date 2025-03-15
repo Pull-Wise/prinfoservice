@@ -1,14 +1,10 @@
-version: '3.8'
-
 services:
   app:
-    image: pullwise/prinfoservice-prod:latest  # Pull the image from Docker Hub
+    image: pullwise/prinfoservice-prod:latest
     container_name: prinfoservice
     restart: always
     ports:
       - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
 
   nginx:
     image: nginx:latest
@@ -18,9 +14,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certbot/conf:/etc/letsencrypt
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/certbot/www:/var/www/certbot
+      - ./nginx/certbot/conf:/etc/letsencrypt
     depends_on:
       - app
 
@@ -28,8 +24,10 @@ services:
     image: certbot/certbot
     container_name: certbot
     volumes:
-      - ./nginx/certbot/conf:/etc/letsencrypt
       - ./nginx/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
-    depends_on:
-      - nginx
+      - ./nginx/certbot/conf:/etc/letsencrypt
+    entrypoint: >
+      sh -c "certbot certonly --webroot --webroot-path=/var/www/certbot
+      --email pullwise@outlook.com --agree-tos --no-eff-email --force-renewal
+      -d posttopurchase.store -d www.posttopurchase.store &&
+      cp /etc/letsencrypt/live/posttopurchase.store/fullchain.pem /etc/letsencrypt/live/posttopurchase.store/privkey.pem /var/www/certbot/"
