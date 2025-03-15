@@ -15,7 +15,6 @@ services:
   nginx:
     image: nginx:latest
     container_name: nginx
-    restart: always
     depends_on:
       app:
         condition: service_healthy
