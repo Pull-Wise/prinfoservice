@@ -39,7 +39,7 @@ services:
     volumes:
       - letsencrypt:/etc/letsencrypt
       - certbot_challenges:/var/www/certbot
-    entrypoint: ["/bin/sh", "-c", "sleep 20 && certbot certonly --webroot -w /var/www/certbot -d posttopurchase.store -d www.posttopurchase.store --email you@example.com --agree-tos --non-interactive"]
+    entrypoint: ["/bin/sh", "-c", "sleep 20 && certbot certonly --webroot -w /var/www/certbot -d posttopurchase.store -d www.posttopurchase.store --email pullwise@outlook.com --agree-tos --non-interactive"]
 
 volumes:
   letsencrypt:
