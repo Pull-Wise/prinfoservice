@@ -5,7 +5,7 @@ services:
     restart: always
     ports:
       - "8080:8080"
-    healthcheck:   # ✅ Health check ensures app is ready before Certbot starts
+    healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
       retries: 5
@@ -27,13 +27,34 @@ services:
       - ./nginx:/etc/nginx/
       - letsencrypt:/etc/letsencrypt
       - certbot_challenges:/var/www/certbot
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
 
   certbot:
     image: certbot/certbot
     container_name: certbot
     depends_on:
-      - nginx   # ✅ Ensures Nginx is running before Certbot starts
+      nginx:
+        condition: service_healthy
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/www/certbot:/var/www/certbot
-    entrypoint: ["/bin/sh", "-c", "sleep 20 && certbot certonly --webroot -w /var/www/certbot -d posttopurchase.store -d www.posttopurchase.store --email you@example.com --agree-tos --non-interactive"]
+      - letsencrypt:/etc/letsencrypt
+      - certbot_challenges:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c "
+      until curl -f http://nginx/.well-known/acme-challenge/; do
+        echo 'Waiting for Nginx...';
+        sleep 5;
+      done;
+      echo 'Nginx is up, requesting certificate...';
+      certbot certonly --webroot -w /var/www/certbot \
+        -d posttopurchase.store -d www.posttopurchase.store \
+        --email pullwise@outlook.com --agree-tos --non-interactive --rsa-key-size 4096;
+      "
+
+volumes:
+  letsencrypt:
+  certbot_challenges:
