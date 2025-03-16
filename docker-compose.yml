@@ -8,7 +8,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /root/keys/pullwise.2025-03-14.private-key.pem:prinfoservice/src/main/resources/pullwise.2025-03-14.private-key.pem
+      - /root/keys/pullwise.2025-03-14.private-key.pem:/src/main/resources/pullwise.2025-03-14.private-key.pem
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 50s
