@@ -13,7 +13,7 @@ services:
       - /root/keys/pullwise.2025-03-14.private-key.pem:/src/main/resources/pullwise.2025-03-14.private-key.pem
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 50s
+      interval: 15s
       retries: 5
       timeout: 5s
 
