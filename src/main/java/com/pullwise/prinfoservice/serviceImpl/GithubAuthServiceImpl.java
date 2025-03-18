@@ -45,11 +45,10 @@ public class GithubAuthServiceImpl {
     @Autowired
     PRInfoServiceResolver prInfoServiceResolver;
 
-    private static final String PRIVATE_KEY_PATH = "src/main/resources/pullwise.2025-03-14.private-key.pem";
     private static final long EXPIRATION_TIME_MS = 10 * 60 * 1000;  // 10 minutes
 
-    public static String generateGitHubJWT(String appId) throws Exception {
-        PrivateKey privateKey = getPrivateKey();
+    public static String generateGitHubJWT(String appId, String keyPath) throws Exception {
+        PrivateKey privateKey = getPrivateKey(keyPath);
         long now = System.currentTimeMillis();
 
         return Jwts.builder()
@@ -60,8 +59,8 @@ public class GithubAuthServiceImpl {
                 .compact();
     }
 
-     private static PrivateKey getPrivateKey() throws Exception {
-         try (PEMParser pemParser = new PEMParser(new FileReader(PRIVATE_KEY_PATH))) {
+     private static PrivateKey getPrivateKey(String keyPath) throws Exception {
+         try (PEMParser pemParser = new PEMParser(new FileReader(keyPath))) {
              Object object = pemParser.readObject();
              if (object instanceof PEMKeyPair) {
                  PEMKeyPair keyPair = (PEMKeyPair) object;
@@ -81,7 +80,7 @@ public class GithubAuthServiceImpl {
             accessTokenRequest.setRepos(List.of(repoId));
             HttpHeaders headers = new HttpHeaders();
 
-            String jwt = GithubAuthServiceImpl.generateGitHubJWT(prInfoServiceResolver.getAppId());
+            String jwt = GithubAuthServiceImpl.generateGitHubJWT(prInfoServiceResolver.getAppId(), prInfoServiceResolver.getPrivateKeyPath());
             headers.setBearerAuth(jwt);
 
             HttpEntity<GithubAccessTokenRequest> entity = new HttpEntity<>(accessTokenRequest,headers);
@@ -111,7 +110,7 @@ public class GithubAuthServiceImpl {
     }
 
     public Integer getInstallationId(GitHubWebhookPayload payload) throws Exception {
-        String jwtToken = GithubAuthServiceImpl.generateGitHubJWT(prInfoServiceResolver.getAppId());
+        String jwtToken = GithubAuthServiceImpl.generateGitHubJWT(prInfoServiceResolver.getAppId(),prInfoServiceResolver.getPrivateKeyPath());
         return this.fetchInstallationIdFromGithub(payload,jwtToken);
     }
 

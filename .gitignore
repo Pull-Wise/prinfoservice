@@ -17,6 +17,10 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
+nginx/certbot/conf/accounts/
+src/main/resources/keystore.p12
+
+
 #private key
 src/main/resources/demohook555.2025-03-07.private-key.pem
 src/main/resources/pullwise.2025-03-14.private-key.pem

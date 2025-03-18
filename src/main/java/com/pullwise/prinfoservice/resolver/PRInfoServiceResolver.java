@@ -11,4 +11,6 @@ public class PRInfoServiceResolver {
     @Value("${appId}")
     private String appId;
 
+    @Value("${private.key.path}")
+    private String privateKeyPath;
 }
