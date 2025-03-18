@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  app:
+    image: pullwise/prinfoservice-prod:latest
+    container_name: prinfoservice
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - /root/keys/pullwise.2025-03-14.private-key.pem:/src/main/resources/pullwise.2025-03-14.private-key.pem
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      retries: 5
+      timeout: 5s
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/temporary.conf:/etc/nginx/temporary.conf:ro
+      - ./nginx/default.conf:/etc/nginx/default.conf:ro
+      - ./nginx/entrypoint.sh:/entrypoint.sh:ro
+      - letsencrypt:/etc/letsencrypt
+      - certbot_challenges:/var/www/certbot
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    depends_on:
+      - nginx
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_challenges:/var/www/certbot
+    entrypoint: ["/bin/sh", "-c", "sleep 20 && certbot certonly --webroot -w /var/www/certbot -d posttopurchase.store -d www.posttopurchase.store --email pullwise@outlook.com --agree-tos --non-interactive"]
+
+volumes:
+  letsencrypt:
+  certbot_challenges:
