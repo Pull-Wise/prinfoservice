@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  a:
+  app:
     image: pullwise/prinfoservice-prod:latest
     container_name: prinfoservice
     restart: always
