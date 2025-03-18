@@ -9,6 +9,7 @@ import com.pullwise.prinfoservice.constants.PRInfoServiceConstant;
 import com.pullwise.prinfoservice.dto.GitHubWebhookPayload;
 import com.pullwise.prinfoservice.response.GithubFileChangeResponse;
 import com.pullwise.prinfoservice.response.PrAnalysisResponse;
+import com.pullwise.prinfoservice.utils.PRInfoUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +32,10 @@ public class PRApiServiceImpl {
 
     @Autowired
     GithubAuthServiceImpl githubAuthService;
-
     @Autowired
     GeminiAPIConfig geminiAPIConfig;
-
+    @Autowired
+    PRInfoUtils prInfoUtils;
     @Autowired
     RestTemplate restTemplate;
 
@@ -58,6 +59,8 @@ public class PRApiServiceImpl {
 
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setBearerAuth(accessToken);
+            log.info("Access token ->  {}",accessToken);
+            log.info("url -> {}",url);
             httpHeaders.set("Accept", "application/vnd.github.v3+json");
             HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
             ResponseEntity<List<GithubFileChangeResponse>> response = restTemplate.exchange(
@@ -77,11 +80,19 @@ public class PRApiServiceImpl {
         if(response.getStatusCode() == HttpStatus.OK){
 
         List<PrAnalysisResponse> analysisList = Objects.requireNonNull(response.getBody()).parallelStream().map((file) -> {
-                                                        PrAnalysisResponse analysis = new PrAnalysisResponse();
-                                                        analysis.setFileName(file.getFilename());
-                                                        analysis.setAnalysisPoints(geminiAPIConfig.getGeminiResponse(file.getPatch()));
-                                                        return analysis;
-                                                }).toList();
+            PrAnalysisResponse analysis = new PrAnalysisResponse();
+            if(prInfoUtils.isStringNullOrEmpty(file.getPatch()))
+                {
+                    analysis.setFileName(file.getFilename());
+                    analysis.setAnalysisPoints(geminiAPIConfig.getGeminiResponse(file.getPatch()));
+                    return analysis;
+                }else
+                {
+                    analysis.setFileName(file.getFilename());
+                    analysis.setAnalysisPoints("No Content to analyze !");
+                    return analysis;
+                }
+            }).toList();
 
         String analysisComment = analysisList.stream()
                 .map(analysis -> "File Name : " + "**" + analysis.getFileName() + "**\n" + analysis.getAnalysisPoints()) // Bold filename
