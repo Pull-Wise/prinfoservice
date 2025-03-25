@@ -6,9 +6,15 @@ package com.pullwise.prinfoservice.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pullwise.prinfoservice.dto.GitHubWebhookPayload;
+import com.pullwise.prinfoservice.entity.HookData;
+import com.pullwise.prinfoservice.repository.HookDataRepository;
+import com.pullwise.prinfoservice.repository.InstallationRepository;
 import com.pullwise.prinfoservice.requests.GitHubInstallationRequest;
+import com.pullwise.prinfoservice.requests.GithubRepoChangeRequest;
+import com.pullwise.prinfoservice.serviceImpl.GithubAppInstallationServiceImpl;
 import com.pullwise.prinfoservice.serviceImpl.PRApiServiceImpl;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,22 +34,10 @@ public class GithubHookController {
     
     @Autowired
     PRApiServiceImpl prAPIServiceImpl;
-
-    private static final Set<String> PULL_REQUEST_ACTIONS = Set.of("opened", "reopened");
-    private static final Set<String> INSTALLATION_ACTIONS = Set.of("created", "deleted");
-    
-//    @PostMapping
-//    public void handleGithubWebhook(@RequestBody GitHubWebhookPayload payload) {
-//        if(Objects.nonNull(payload.action) && INSTALLATION_ACTIONS.contains(payload.action)){
-//
-//        }
-//
-//        if(Objects.nonNull(payload.action) && PULL_REQUEST_ACTIONS.contains(payload.action)){
-//            prAPIServiceImpl.processGithubWebHook(payload);
-//        }else{
-//            log.error("Github Action is not supported -> {} ",payload);
-//        }
-//    }
+    @Autowired
+    GithubAppInstallationServiceImpl githubAppInstallationService;
+    @Autowired
+    HookDataRepository hookDataRepository;
 
     @PostMapping
     public void handleGitHubWebhook(
@@ -51,21 +45,23 @@ public class GithubHookController {
             @RequestHeader("X-GitHub-Event") String eventType) {
 
         log.info("Received GitHub Event: {}", eventType);
-
+        this.persistHookHistoryData(payload,eventType);
         switch (eventType) {
             case "installation":
                 GitHubInstallationRequest installationRequest = parsePayload(payload, GitHubInstallationRequest.class);
                 log.info("Handling Installation Event");
                 log.info(installationRequest.toString());
-                // Process the installation event
+                githubAppInstallationService.processGithubInstallationHook(installationRequest);
                 break;
-
             case "pull_request":
                 GitHubWebhookPayload pullRequestPayload = parsePayload(payload, GitHubWebhookPayload.class);
                 prAPIServiceImpl.processGithubWebHook(pullRequestPayload);
                 log.info("Handling Pull Request Event");
                 break;
-
+            case "installation_repositories":
+                GithubRepoChangeRequest githubRepoChangeRequest = parsePayload(payload, GithubRepoChangeRequest.class);
+                githubAppInstallationService.processRepoChangeRequest(githubRepoChangeRequest);
+                break;
             default:
                 log.warn("Unhandled GitHub Event: {}", eventType);
         }
@@ -73,9 +69,26 @@ public class GithubHookController {
 
     private <T> T parsePayload(String payload, Class<T> clazz) {
         try {
+
             return new ObjectMapper().readValue(payload, clazz);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse GitHub webhook payload", e);
+        }
+    }
+
+    private void persistHookHistoryData(String payload,String eventType){
+        try{
+            HookData hookData = HookData.builder()
+                    .hookData(payload)
+                    .eventType(eventType)
+                    .createdBy("PULLWISE")
+                    .createdDate(LocalDateTime.now())
+                    .lastUpdatedBy("PULLWISE")
+                    .lastUpdatedDate(LocalDateTime.now())
+                    .build();
+            hookDataRepository.save(hookData);
+        }catch(Exception e){
+            log.error("Error occurred while persistHookHistoryData -> with message {} and payload {}",e.getMessage(),payload);
         }
     }
 
