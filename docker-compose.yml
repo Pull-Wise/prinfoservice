@@ -9,6 +9,9 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL
+      - SPRING_GEMINI_API_KEY
+      - SPRING_GITHUB_PRIVATEKEY_PATH
     volumes:
       - /root/keys/pullwise.2025-03-14.private-key.pem:/src/main/resources/pullwise.2025-03-14.private-key.pem
     healthcheck:

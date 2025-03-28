@@ -4,14 +4,18 @@
  */
 package com.pullwise.prinfoservice.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pullwise.prinfoservice.dto.GitHubWebhookPayload;
+import com.pullwise.prinfoservice.entity.HookData;
+import com.pullwise.prinfoservice.repository.HookDataRepository;
+import com.pullwise.prinfoservice.repository.InstallationRepository;
+import com.pullwise.prinfoservice.requests.GitHubInstallationRequest;
+import com.pullwise.prinfoservice.requests.GithubRepoChangeRequest;
+import com.pullwise.prinfoservice.serviceImpl.GithubAppInstallationServiceImpl;
 import com.pullwise.prinfoservice.serviceImpl.PRApiServiceImpl;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,15 +34,61 @@ public class GithubHookController {
     
     @Autowired
     PRApiServiceImpl prAPIServiceImpl;
+    @Autowired
+    GithubAppInstallationServiceImpl githubAppInstallationService;
+    @Autowired
+    HookDataRepository hookDataRepository;
 
-    private static final Set<String> VALID_ACTIONS = Set.of("opened", "reopened");
-    
     @PostMapping
-    public void handleGithubWebhook(@RequestBody GitHubWebhookPayload payload) {
-        if(Objects.nonNull(payload.action) && VALID_ACTIONS.contains(payload.action)){
-            prAPIServiceImpl.processGithubWebHook(payload);
-        }else{
-            log.error("Github Action is not supported -> {} ",payload);
+    public void handleGitHubWebhook(
+            @RequestBody String payload,
+            @RequestHeader("X-GitHub-Event") String eventType) {
+
+        log.info("Received GitHub Event: {}", eventType);
+        this.persistHookHistoryData(payload,eventType);
+        switch (eventType) {
+            case "installation":
+                GitHubInstallationRequest installationRequest = parsePayload(payload, GitHubInstallationRequest.class);
+                log.info("Handling Installation Event");
+                log.info(installationRequest.toString());
+                githubAppInstallationService.processGithubInstallationHook(installationRequest);
+                break;
+            case "pull_request":
+                GitHubWebhookPayload pullRequestPayload = parsePayload(payload, GitHubWebhookPayload.class);
+                prAPIServiceImpl.processGithubWebHook(pullRequestPayload);
+                log.info("Handling Pull Request Event");
+                break;
+            case "installation_repositories":
+                GithubRepoChangeRequest githubRepoChangeRequest = parsePayload(payload, GithubRepoChangeRequest.class);
+                githubAppInstallationService.processRepoChangeRequest(githubRepoChangeRequest);
+                break;
+            default:
+                log.warn("Unhandled GitHub Event: {}", eventType);
+        }
+    }
+
+    private <T> T parsePayload(String payload, Class<T> clazz) {
+        try {
+
+            return new ObjectMapper().readValue(payload, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse GitHub webhook payload", e);
+        }
+    }
+
+    private void persistHookHistoryData(String payload,String eventType){
+        try{
+            HookData hookData = HookData.builder()
+                    .hookData(payload)
+                    .eventType(eventType)
+                    .createdBy("PULLWISE")
+                    .createdDate(LocalDateTime.now())
+                    .lastUpdatedBy("PULLWISE")
+                    .lastUpdatedDate(LocalDateTime.now())
+                    .build();
+            hookDataRepository.save(hookData);
+        }catch(Exception e){
+            log.error("Error occurred while persistHookHistoryData -> with message {} and payload {}",e.getMessage(),payload);
         }
     }
 
