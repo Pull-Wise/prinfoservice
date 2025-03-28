@@ -7,6 +7,8 @@ package com.pullwise.prinfoservice.serviceImpl;
 import com.pullwise.prinfoservice.config.GeminiAPIConfig;
 import com.pullwise.prinfoservice.constants.PRInfoServiceConstant;
 import com.pullwise.prinfoservice.dto.GitHubWebhookPayload;
+import com.pullwise.prinfoservice.entity.RepositoryData;
+import com.pullwise.prinfoservice.repository.RepositoryDataRepository;
 import com.pullwise.prinfoservice.response.GithubFileChangeResponse;
 import com.pullwise.prinfoservice.response.PrAnalysisResponse;
 import com.pullwise.prinfoservice.utils.PRInfoUtils;
@@ -38,6 +40,8 @@ public class PRApiServiceImpl {
     PRInfoUtils prInfoUtils;
     @Autowired
     RestTemplate restTemplate;
+    @Autowired
+    RepositoryDataRepository repositoryDataRepository;
 
     public void processGithubWebHook(GitHubWebhookPayload payload){
         this.getChangedFilesOfPR(payload);
@@ -141,5 +145,11 @@ public class PRApiServiceImpl {
         }
         return true;
     }
+
+    public void getListOfPRsForInstallaionId(Long installationId) {
+        List<RepositoryData> repositories = this.repositoryDataRepository.findAllByInstallationInstallationId(installationId);
+        log.info(repositories.toString());
+    }
+
 
 }
