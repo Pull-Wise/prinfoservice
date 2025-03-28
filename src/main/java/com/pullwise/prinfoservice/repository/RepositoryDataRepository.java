@@ -10,4 +10,6 @@ import java.util.List;
 public interface RepositoryDataRepository extends JpaRepository<RepositoryData, Long> {
     RepositoryData findByRepositoryId(Long repositoryId);
 
+    List<RepositoryData> findAllByInstallationInstallationId(Long installationId);
+
 }
