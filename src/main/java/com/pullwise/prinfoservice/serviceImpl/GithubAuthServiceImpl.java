@@ -111,7 +111,6 @@ public class GithubAuthServiceImpl {
 
     public Integer getInstallationId(GitHubWebhookPayload payload) throws Exception {
         String jwtToken = GithubAuthServiceImpl.generateGitHubJWT(prInfoServiceResolver.getAppId(),prInfoServiceResolver.getPrivateKeyPath());
-        log.info("jwt token -> {}",jwtToken);
         return this.fetchInstallationIdFromGithub(payload,jwtToken);
     }
 

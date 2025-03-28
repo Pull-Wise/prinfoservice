@@ -11,5 +11,4 @@ public interface RepositoryDataRepository extends JpaRepository<RepositoryData, 
     RepositoryData findByRepositoryId(Long repositoryId);
 
     List<RepositoryData> findAllByInstallationInstallationId(Long installationId);
-
 }
