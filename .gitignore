@@ -25,6 +25,9 @@ src/main/resources/keystore.p12
 src/main/resources/demohook555.2025-03-07.private-key.pem
 src/main/resources/pullwise.2025-03-14.private-key.pem
 
+#local properties
+src/main/resources/application-local.properties
+
 ### IntelliJ IDEA ###
 .idea
 *.iws
